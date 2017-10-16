@@ -7,47 +7,45 @@ import java.util.Set;
 public class ExchangeRates {
 
     private long timestamp;
-    private Map<String, Double> rates;
+    private Map<String, BigDecimal> rates;
     private String baseCurrency;
 
-    private final static int ROUND_MODE = BigDecimal.ROUND_HALF_DOWN;
-    private final static int SCALE = 12;
+    public int roundMode = BigDecimal.ROUND_HALF_DOWN;
+    public int scale = 12;
 
-    public ExchangeRates(long timestamp, Map<String, Double> rates, String baseCurrency) {
+    public ExchangeRates(long timestamp, Map<String, BigDecimal> rates, String baseCurrency) {
         this.timestamp = timestamp;
         this.rates = rates;
         this.baseCurrency = baseCurrency;
     }
 
-    public Map<String, Double> getRates() {
+    public Map<String, BigDecimal> getRates() {
         return rates;
     }
 
-    public double getExchangeRate(String sourceCurrencyCode, String targetCurrencyCode) {
+    public BigDecimal getExchangeRate(String sourceCurrencyCode, String targetCurrencyCode) {
 
         if (targetCurrencyCode.equals(baseCurrency)) {
             return getExchangeRate(sourceCurrencyCode);
         }
 
-        double sourceRate = getExchangeRate(sourceCurrencyCode);
-        double targetRate = getExchangeRate(targetCurrencyCode);
+        BigDecimal sourceRate = getExchangeRate(sourceCurrencyCode);
+        BigDecimal targetRate = getExchangeRate(targetCurrencyCode);
 
         BigDecimal crossRate = getCrossRate(sourceRate, targetRate);
-        return crossRate.doubleValue();
+        return crossRate;
     }
 
-    public double getExchangeRate(String targetCurrencyCode) {
-        if (targetCurrencyCode.equals(baseCurrency)) return 1.0d;
+    public BigDecimal getExchangeRate(String targetCurrencyCode) {
+        if (targetCurrencyCode.equals(baseCurrency)) return BigDecimal.valueOf(1.0d);
         return rates.get(targetCurrencyCode);
     }
 
-    public void setExchangeRate(String sourceCurrencyCode, String targetCurrencyCode, double rate) {
+    public void setExchangeRate(String sourceCurrencyCode, String targetCurrencyCode, BigDecimal rate) {
 
         if (!targetCurrencyCode.equals(baseCurrency)) {
-            BigDecimal sourceRate = BigDecimal.valueOf(getExchangeRate(sourceCurrencyCode));
-            BigDecimal targetRate = BigDecimal.valueOf(getExchangeRate(targetCurrencyCode));
-            BigDecimal newRateValue = BigDecimal.valueOf(rate);
-            double newRate = (targetRate.divide(newRateValue, SCALE, ROUND_MODE)).doubleValue();
+            BigDecimal targetRate = getExchangeRate(targetCurrencyCode);
+            BigDecimal newRate = targetRate.divide(rate, scale, roundMode);
 
             rates.put(sourceCurrencyCode, newRate);
         } else {
@@ -55,7 +53,7 @@ public class ExchangeRates {
         }
     }
 
-    public void setExchangeRate(String sourceCurrencyCode, double rate) {
+    public void setExchangeRate(String sourceCurrencyCode, BigDecimal rate) {
         rates.put(sourceCurrencyCode, rate);
     }
 
@@ -71,7 +69,7 @@ public class ExchangeRates {
         return timestamp;
     }
 
-    void setTimestamp(long timestamp) {
+    private void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
     }
 
@@ -79,10 +77,20 @@ public class ExchangeRates {
         return baseCurrency;
     }
 
-    public BigDecimal getCrossRate(double sourceRate, double targetRate) {
-        BigDecimal sourceRateValue = BigDecimal.valueOf(sourceRate);
-        BigDecimal targetRateValue = BigDecimal.valueOf(targetRate);
+    public void setBaseCurrency(String newBaseCurrency) {
+        BigDecimal newBaseCurrencyRate = getExchangeRate(newBaseCurrency);
 
-        return targetRateValue.divide(sourceRateValue, SCALE, ROUND_MODE);
+        for (Map.Entry<String, BigDecimal> entry : rates.entrySet()) {
+            BigDecimal oldValue = entry.getValue();
+            BigDecimal newValue = getExchangeRate(entry.getKey(), newBaseCurrency);
+            rates.put(entry.getKey(), newValue);
+        }
+        rates.put(baseCurrency, newBaseCurrencyRate);
+        rates.remove(newBaseCurrency);
+        baseCurrency = newBaseCurrency;
+    }
+
+    public BigDecimal getCrossRate(BigDecimal sourceRate, BigDecimal targetRate) {
+        return targetRate.divide(sourceRate, scale, roundMode);
     }
 }
