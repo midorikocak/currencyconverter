@@ -58,8 +58,13 @@ public class ExchangeRatesTest {
 
     @Test
     public void testGetExchangeRate() {
-        double crossRate = exchangeRates.getCrossRate(rates.get("TRY"), rates.get("CZK")).doubleValue();
-        assertEquals(crossRate, exchangeRates.getExchangeRate("TRY", "CZK").doubleValue(), 0);
+
+        BigDecimal sourceRate = BigDecimal.valueOf(rates.get("TRY").doubleValue());
+        BigDecimal targetRate = BigDecimal.valueOf(rates.get("CZK").doubleValue());
+
+        BigDecimal crossRate = sourceRate.divide(targetRate);
+
+        assertEquals(crossRate.doubleValue(), exchangeRates.getExchangeRate("TRY", "CZK").doubleValue(), 0);
     }
 
     @Test

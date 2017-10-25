@@ -32,7 +32,7 @@ public class ExchangeRates {
         BigDecimal sourceRate = getExchangeRate(sourceCurrencyCode);
         BigDecimal targetRate = getExchangeRate(targetCurrencyCode);
 
-        BigDecimal crossRate = getCrossRate(sourceRate, targetRate);
+        BigDecimal crossRate = sourceRate.divide(targetRate, scale, roundMode);
         return crossRate;
     }
 
@@ -88,9 +88,5 @@ public class ExchangeRates {
         rates.put(baseCurrency, newBaseCurrencyRate);
         rates.remove(newBaseCurrency);
         baseCurrency = newBaseCurrency;
-    }
-
-    public BigDecimal getCrossRate(BigDecimal sourceRate, BigDecimal targetRate) {
-        return targetRate.divide(sourceRate, scale, roundMode);
     }
 }
