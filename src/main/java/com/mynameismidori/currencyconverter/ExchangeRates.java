@@ -24,20 +24,13 @@ public class ExchangeRates {
     }
 
     public BigDecimal getExchangeRate(String sourceCurrencyCode, String targetCurrencyCode) {
-
-        if (targetCurrencyCode.equals(baseCurrency)) {
-            return getExchangeRate(sourceCurrencyCode);
-        }
-
         BigDecimal sourceRate = getExchangeRate(sourceCurrencyCode);
         BigDecimal targetRate = getExchangeRate(targetCurrencyCode);
 
-        BigDecimal crossRate = sourceRate.divide(targetRate, scale, roundMode);
-        return crossRate;
+        return sourceRate.divide(targetRate, scale, roundMode);
     }
 
     public BigDecimal getExchangeRate(String targetCurrencyCode) {
-        if (targetCurrencyCode.equals(baseCurrency)) return BigDecimal.valueOf(1.0d);
         return rates.get(targetCurrencyCode);
     }
 
@@ -86,7 +79,7 @@ public class ExchangeRates {
             rates.put(entry.getKey(), newValue);
         }
         rates.put(baseCurrency, newBaseCurrencyRate);
-        rates.remove(newBaseCurrency);
+        rates.put(newBaseCurrency, BigDecimal.valueOf(1.0d));
         baseCurrency = newBaseCurrency;
     }
 }

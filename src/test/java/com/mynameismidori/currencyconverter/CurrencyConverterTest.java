@@ -1,18 +1,20 @@
 package com.mynameismidori.currencyconverter;
 
 
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
+
 import java.io.*;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.junit.Before;
 import org.junit.Test;
+
 import static org.junit.Assert.*;
 
 
@@ -21,6 +23,7 @@ public class CurrencyConverterTest {
     private Map<String, BigDecimal> rates;
     private ExchangeRates exchangeRates;
     private long timestamp;
+    private String baseCurrency;
 
     @Before
     public void setUp() throws IOException {
@@ -38,26 +41,40 @@ public class CurrencyConverterTest {
             Type typeOfHashMap = new TypeToken<HashMap<String, BigDecimal>>() {
             }.getType();
             rates = new Gson().fromJson(ratesObject, typeOfHashMap);
-            exchangeRates = new ExchangeRates(timestamp, rates, "USD");
-            exchangeRates.setBaseCurrency("CZK");
-        }
-        currencyConverter = new CurrencyConverter(exchangeRates, "EUR", "CZK");
+            baseCurrency = "USD";
+            exchangeRates = new ExchangeRates(timestamp, rates, baseCurrency);
+            setBaseCurrency("CZK");
 
+        }
+        currencyConverter = new CurrencyConverter(exchangeRates);
+
+    }
+
+    public void setBaseCurrency(String currencyCode) {
+        baseCurrency = currencyCode;
+        exchangeRates.setBaseCurrency(baseCurrency);
     }
 
     @Test
     public void testConvertAmountToBaseCurrency() {
-        BigDecimal amount = BigDecimal.valueOf(15.0d);
-        double expected = amount.multiply(rates.get("EUR")).setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
-        double result = currencyConverter.convert(amount.doubleValue());
+        BigDecimal amount = BigDecimal.valueOf(1.0d);
+        BigDecimal targetRate = exchangeRates.getExchangeRate("EUR");
+        double expected = amount.multiply(targetRate).setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
+        double result = currencyConverter.convert(amount.doubleValue(), "EUR", baseCurrency);
         assertEquals(expected, result, 0);
     }
 
+
     @Test
     public void testConvertAmountFromBaseCurrency() {
-        BigDecimal amount = BigDecimal.valueOf(300.0d);
-        double expected = amount.multiply(exchangeRates.getExchangeRate("CZK", "EUR")).setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
-        double result = currencyConverter.convert(amount.doubleValue(), "CZK", "EUR");
+        BigDecimal amount = BigDecimal.valueOf(1.0d);
+
+        BigDecimal sourceRate = exchangeRates.getExchangeRate(baseCurrency);
+        BigDecimal targetRate = exchangeRates.getExchangeRate("EUR");
+
+        BigDecimal crossRate = sourceRate.divide(targetRate, 12, BigDecimal.ROUND_HALF_UP);
+        double expected = amount.multiply(crossRate).setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
+        double result = currencyConverter.convert(amount.doubleValue(), baseCurrency, "EUR");
         assertEquals(expected, result, 0);
     }
 
@@ -69,6 +86,7 @@ public class CurrencyConverterTest {
         double result = currencyConverter.convert(amount.doubleValue(), "EUR", "TRY");
         assertEquals(expected, result, 0);
     }
+
 
     @Test
     public void testSetCustomTemporaryCurrencyRate() {
