@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
+
 import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -13,6 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -45,10 +47,13 @@ public class ExchangeRatesTest {
             baseCurrency = "USD";
             exchangeRates = new ExchangeRates(timestamp, ratesToCheck, baseCurrency);
             Set<String> currentRates = exchangeRates.listAvailableCurrencies();
-            System.out.println(currentRates);
         }
     }
 
+    @After
+    public void tearDown(){
+        setBaseCurrency("USD");
+    }
 
     public void setBaseCurrency(String currencyCode) {
         baseCurrency = currencyCode;
@@ -62,19 +67,71 @@ public class ExchangeRatesTest {
     }
 
     @Test
+    public void testGetExchangeRateBaseBaseChanged() {
+        setBaseCurrency("CZK");
+        assertEquals(1.0d, exchangeRates.getExchangeRate(baseCurrency).doubleValue(), 0);
+    }
+
+    @Test
     public void testGetExchangeRateKoruna() {
         assertEquals(rates.get("CZK"), exchangeRates.getExchangeRate("CZK"));
+    }
+    @Test
+    public void testGetExchangeRateKorunaBaseChanged() {
+        setBaseCurrency("CZK");
+        assertEquals(BigDecimal.valueOf(1.0d), exchangeRates.getExchangeRate("CZK"));
     }
 
     @Test
     public void testGetExchangeRate() {
 
-        BigDecimal sourceRate = BigDecimal.valueOf(rates.get("TRY").doubleValue());
+        BigDecimal sourceRate = BigDecimal.valueOf(rates.get("EUR").doubleValue());
         BigDecimal targetRate = BigDecimal.valueOf(rates.get("CZK").doubleValue());
 
-        BigDecimal crossRate = sourceRate.divide(targetRate, 12, BigDecimal.ROUND_HALF_UP);
+        BigDecimal crossRate = targetRate.divide(sourceRate, 12, BigDecimal.ROUND_HALF_UP);
 
-        assertEquals(crossRate.doubleValue(), exchangeRates.getExchangeRate("TRY", "CZK").doubleValue(), 0);
+        double expected = crossRate.doubleValue();
+        double actual = exchangeRates.getExchangeRate("EUR", "CZK").doubleValue();
+        assertEquals(expected, actual, 0.00001);
+    }
+
+    @Test
+    public void testGetExchangeRateBaseChanged() {
+        setBaseCurrency("CZK");
+        BigDecimal sourceRate = BigDecimal.valueOf(rates.get("EUR").doubleValue());
+        BigDecimal targetRate = BigDecimal.valueOf(rates.get("CZK").doubleValue());
+
+        BigDecimal crossRate = targetRate.divide(sourceRate, 12, BigDecimal.ROUND_HALF_UP);
+
+        double expected = crossRate.doubleValue();
+        double actual = exchangeRates.getExchangeRate("EUR", "CZK").doubleValue();
+        assertEquals(expected, actual, 0.00001);
+    }
+
+
+
+    @Test
+    public void testGetExchangeRateReverse() {
+
+        BigDecimal sourceRate = BigDecimal.valueOf(rates.get("CZK").doubleValue());
+        BigDecimal targetRate = BigDecimal.valueOf(rates.get("EUR").doubleValue());
+
+        BigDecimal crossRate = targetRate.divide(sourceRate, 12, BigDecimal.ROUND_HALF_UP);
+        double expected = crossRate.doubleValue();
+        double actual = exchangeRates.getExchangeRate("CZK", "EUR").doubleValue();
+        assertEquals(expected, actual, 0);
+    }
+
+    @Test
+    public void testGetExchangeRateReverseBaseChanged() {
+        setBaseCurrency("CZK");
+        BigDecimal sourceRate = BigDecimal.valueOf(rates.get("CZK").doubleValue());
+        BigDecimal targetRate = BigDecimal.valueOf(rates.get("EUR").doubleValue());
+
+        BigDecimal crossRate = targetRate.divide(sourceRate, 12, BigDecimal.ROUND_HALF_UP);
+        double expected = crossRate.doubleValue();
+        double actual = exchangeRates.getExchangeRate("CZK", "EUR").doubleValue();
+        assertEquals(expected, actual, 0);
     }
 
     @Test
@@ -86,13 +143,20 @@ public class ExchangeRatesTest {
     }
 
     @Test
-    public void testChangeBaseCurrency() {
-        exchangeRates.setExchangeRate("EUR", "CZK", BigDecimal.valueOf(25.0));
+    public void testSetExchangeRateBaseChanged() {
         setBaseCurrency("CZK");
-        double rate = exchangeRates.getExchangeRate("EUR").doubleValue();
+        exchangeRates.setExchangeRate("EUR", "CZK", BigDecimal.valueOf(25.0));
+        double rate = exchangeRates.getExchangeRate("EUR", "CZK").doubleValue();
 
         assertEquals(25, rate, 0);
     }
 
-
+    @Test
+    public void testChangeBaseCurrency() {
+        exchangeRates.setExchangeRate("EUR", "CZK", BigDecimal.valueOf(25.0));
+        setBaseCurrency("CZK");
+        exchangeRates.setInverse(true);
+        double rate = exchangeRates.getExchangeRate("EUR").doubleValue();
+        assertEquals(25, rate, 0);
+    }
 }

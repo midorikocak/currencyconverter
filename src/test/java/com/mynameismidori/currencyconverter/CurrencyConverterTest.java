@@ -58,8 +58,11 @@ public class CurrencyConverterTest {
     @Test
     public void testConvertAmountToBaseCurrency() {
         BigDecimal amount = BigDecimal.valueOf(1.0d);
+        //exchangeRates.setInverse(true);
         BigDecimal targetRate = exchangeRates.getExchangeRate("EUR");
+        exchangeRates.setInverse(true);
         double expected = amount.multiply(targetRate).setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
+
         double result = currencyConverter.convert(amount.doubleValue(), "EUR", baseCurrency);
         assertEquals(expected, result, 0);
     }
@@ -72,7 +75,7 @@ public class CurrencyConverterTest {
         BigDecimal sourceRate = exchangeRates.getExchangeRate(baseCurrency);
         BigDecimal targetRate = exchangeRates.getExchangeRate("EUR");
 
-        BigDecimal crossRate = sourceRate.divide(targetRate, 12, BigDecimal.ROUND_HALF_UP);
+        BigDecimal crossRate = targetRate.divide(sourceRate, 12, BigDecimal.ROUND_HALF_UP);
         double expected = amount.multiply(crossRate).setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
         double result = currencyConverter.convert(amount.doubleValue(), baseCurrency, "EUR");
         assertEquals(expected, result, 0);
